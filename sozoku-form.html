@@ -147,17 +147,35 @@
   .actions button{
     font-size:1rem;
     font-weight:700;
-    color:#fff;
-    background:var(--accent);
     border:none;
     border-radius:6px;
     padding:14px 28px;
     cursor:pointer;
+    margin:6px;
+  }
+  .actions .btn-img{
+    color:#fff;
+    background:var(--accent);
+  }
+  .actions .btn-pdf{
+    color:var(--accent);
+    background:#fff;
+    border:1.5px solid var(--accent);
+  }
+  .actions button:disabled{
+    opacity:.5;
+    cursor:default;
   }
   .actions .sub{
     font-size:.78rem;
     color:#666;
     margin-top:8px;
+  }
+  .actions .busy{
+    font-size:.82rem;
+    color:var(--accent);
+    margin-top:6px;
+    min-height:1.2em;
   }
 
   /* ===== プレビュー／印刷シート ===== */
@@ -295,7 +313,7 @@
 <!-- ================= 入力パート ================= -->
 <div class="entry">
   <h1>分家住宅 確認事項・相続関係説明図 入力フォーム</h1>
-  <p class="lede">①〜④の確認事項にご回答のうえ、⑤ではご夫（申請者）側のご家族の氏名をご入力ください。入力内容は下のプレビューに自動で反映されます。すべて入力が終わりましたら「PDFとして保存する」を押してください。</p>
+  <p class="lede">①〜④の確認事項にご回答のうえ、⑤ではご夫（申請者）側のご家族の氏名をご入力ください。入力内容は下のプレビューに自動で反映されます。すべて入力が終わりましたら「画像で保存する」を押してください。</p>
 
   <fieldset>
     <legend>① ご夫婦名義の不動産</legend>
@@ -420,8 +438,10 @@
   </fieldset>
 
   <div class="actions">
-    <button type="button" onclick="window.print()">PDFとして保存する</button>
-    <p class="sub">印刷画面が開いたら「PDFに保存」を選択してください。<br>保存したPDFをメールでご返送ください。</p>
+    <button type="button" class="btn-img" id="btn-img" onclick="saveAsImage()">画像で保存する</button>
+    <button type="button" class="btn-pdf" onclick="window.print()">PDFで保存する</button>
+    <p class="busy" id="busy"></p>
+    <p class="sub">「画像で保存」がおすすめです。スマホの写真フォルダに保存され、そのままLINEやメールに添付してご返送いただけます。<br>保存した画像（またはPDF）をご返送ください。</p>
   </div>
 </div>
 
@@ -595,6 +615,59 @@
   window.addEventListener('resize',fit);
   fit();
 })();
+
+// ===== 画像で保存 =====
+function saveAsImage(){
+  var busy=document.getElementById('busy');
+  var btn=document.getElementById('btn-img');
+  var sheet=document.getElementById('sheet');
+  if(typeof html2canvas==='undefined'){
+    busy.textContent='画像機能を読み込めませんでした。「PDFで保存する」をご利用ください。';
+    return;
+  }
+  btn.disabled=true;
+  busy.textContent='画像を作成しています…';
+
+  // 縮小表示を一旦解除してフル解像度で撮影
+  var prevTransform=sheet.style.transform;
+  var wrap=sheet.parentElement;
+  var prevWrapH=wrap.style.height;
+  sheet.style.transform='none';
+  wrap.style.height='auto';
+
+  window.scrollTo(0,0);
+
+  setTimeout(function(){
+    html2canvas(sheet,{
+      scale:2,
+      backgroundColor:'#ffffff',
+      useCORS:true,
+      windowWidth:sheet.scrollWidth,
+      windowHeight:sheet.scrollHeight
+    }).then(function(canvas){
+      // 表示を元に戻す
+      sheet.style.transform=prevTransform;
+      wrap.style.height=prevWrapH;
+
+      var dataURL=canvas.toDataURL('image/png');
+      var a=document.createElement('a');
+      a.href=dataURL;
+      a.download='相続関係説明図.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      busy.textContent='保存しました。写真フォルダ（またはダウンロード）をご確認ください。';
+      btn.disabled=false;
+    }).catch(function(e){
+      sheet.style.transform=prevTransform;
+      wrap.style.height=prevWrapH;
+      busy.textContent='画像の作成に失敗しました。「PDFで保存する」をご利用ください。';
+      btn.disabled=false;
+    });
+  },100);
+}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
