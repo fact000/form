@@ -509,9 +509,8 @@
     if(!box) return;
     var s=state[key]||{};
     var name=(s.name||'').trim();
-    var text=(s.dead&&name?'（亡）':'')+name;
-    if(name){
-      box.textContent=text;
+    if(name || s.dead){
+      box.textContent=(s.dead?'（亡）':'')+name;
     }else if(box.classList.contains('pbox')){
       box.innerHTML='<span class="ph">'+box.getAttribute('data-ph')+'</span>';
     }else{
